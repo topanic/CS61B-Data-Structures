@@ -114,6 +114,55 @@ public class Model extends Observable {
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
 
+        // can't move or game over
+        if (!atLeastOneMoveExists(this.board)) {
+            checkGameOver();
+            return changed;
+        }
+        
+        this.board.setViewingPerspective(side);
+        /*
+        * 顶行为第三行，
+        * 1、第二行上方的空间是空的，第二行棋子往上移动。
+        * 2、上方空间与自身的值相同，往上移动。
+        * */
+         for (int col = 0; col < this.board.size(); col++) {
+             boolean ifMerge = false;
+             for (int row = this.board.size() - 2; row >= 0 ; row--) {
+                 // 从第二行开始往下遍历
+                 Tile t = tile(col, row);
+                 if (t == null) {
+                     continue;
+                 }
+                 // 找到最近的一个空白
+                 int spaceRow = -1;
+                 for (int i = row + 1; i < this.board.size(); i++) {
+                     if (tile(col, i) == null) {
+                         // 遇到空白就记录下空白的位置
+                         spaceRow = i;
+                     } else if (!ifMerge && tile(col, i).value() == t.value()) {
+                         // 遇到相等的，且没有合并过的就合并
+                         spaceRow = i;
+                         ifMerge = true;
+                         break;
+                     } else {
+                         break;
+                     }
+                 }
+                 // 若有进行移动
+                 if (spaceRow != -1) {
+                     ifMerge = this.board.move(col, spaceRow, t);
+                     changed = true;
+                     // 若合并过，则加分
+                     if (ifMerge) {
+                         this.score += 2 * t.value();
+                     }
+                 }
+            }
+        }
+
+        this.board.setViewingPerspective(Side.NORTH);
+
         checkGameOver();
         if (changed) {
             setChanged();
@@ -137,7 +186,14 @@ public class Model extends Observable {
      *  Empty spaces are stored as null.
      * */
     public static boolean emptySpaceExists(Board b) {
-        // TODO: Fill in this function.
+        int boardSize = b.size();
+        for (int i = 0; i < boardSize; i++) {
+            for (int j = 0; j < boardSize; j++) {
+                if (b.tile(i, j) == null) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -147,7 +203,17 @@ public class Model extends Observable {
      * given a Tile object t, we get its value with t.value().
      */
     public static boolean maxTileExists(Board b) {
-        // TODO: Fill in this function.
+        int boardSize = b.size();
+        for (int i = 0; i < boardSize; i++) {
+            for (int j = 0; j < boardSize; j++) {
+                if (b.tile(i, j) == null) {
+                    continue;
+                }
+                if (b.tile(i, j).value() == MAX_PIECE) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -158,7 +224,42 @@ public class Model extends Observable {
      * 2. There are two adjacent tiles with the same value.
      */
     public static boolean atLeastOneMoveExists(Board b) {
-        // TODO: Fill in this function.
+        if (maxTileExists(b)) {
+            return true;
+        }
+        if (emptySpaceExists(b)) {
+            return true;
+        }
+        int boardSize = b.size();
+        for (int i = 0; i < boardSize; i++) {
+            for (int j = 0; j < boardSize; j++) {
+                try {
+                    if (b.tile(i, j).value() == b.tile(i - 1, j).value()) {
+                        return true;
+                    }
+                } catch (ArrayIndexOutOfBoundsException ignored) {
+                }
+                try {
+                    if (b.tile(i, j).value() == b.tile(i + 1, j).value()) {
+                        return true;
+                    }
+                } catch (ArrayIndexOutOfBoundsException ignored) {
+                }
+                try {
+                    if (b.tile(i, j).value() == b.tile(i, j - 1).value()) {
+                        return true;
+                    }
+                } catch (ArrayIndexOutOfBoundsException ignored) {
+                }
+                try {
+                    if (b.tile(i, j).value() == b.tile(i, j + 1).value()) {
+                        return true;
+                    }
+                } catch (ArrayIndexOutOfBoundsException ignored) {
+                }
+
+            }
+        }
         return false;
     }
 
